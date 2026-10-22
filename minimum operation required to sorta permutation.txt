@@ -1,0 +1,58 @@
+class Solution {
+public:
+    int minOperations(vector<int>& nums) {
+        int n = nums.size();
+        int zero = find(nums.begin(), nums.end(), 0) - nums.begin();
+
+        vector<int> rev(nums.rbegin(), nums.rend());
+
+        int k0 = zero;
+        int k1 = n - 1 - zero;
+
+        bool ok0 = true, ok1 = true;
+
+        for (int i = 0; i < n; i++) {
+            if (nums[(k0 + i) % n] != i)
+                ok0 = false;
+
+            if (rev[(k1 + i) % n] != i)
+                ok1 = false;
+        }
+
+        if (!ok0 && !ok1)
+            return -1;
+
+        vector<vector<int>> dist(2, vector<int>(n, -1));
+        queue<pair<int, int>> q;
+
+        q.push({0, 0});
+        dist[0][0] = 0;
+
+        while (!q.empty()) {
+            auto [type, k] = q.front();
+            q.pop();
+
+            if ((type == 0 && ok0 && k == k0) ||
+                (type == 1 && ok1 && k == k1)) {
+                return dist[type][k];
+            }
+
+            int nk = (k + 1) % n;
+
+            if (dist[type][nk] == -1) {
+                dist[type][nk] = dist[type][k] + 1;
+                q.push({type, nk});
+            }
+
+            int nt = 1 - type;
+            nk = (n - k) % n;
+
+            if (dist[nt][nk] == -1) {
+                dist[nt][nk] = dist[type][k] + 1;
+                q.push({nt, nk});
+            }
+        }
+
+        return -1;
+    }
+};
