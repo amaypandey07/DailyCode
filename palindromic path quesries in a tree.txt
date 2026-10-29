@@ -1,0 +1,164 @@
+class Solution {
+    struct Fenwick {
+        int n;
+        vector<int> bit;
+
+        Fenwick(int n) : n(n), bit(n + 1, 0) {}
+
+        void add(int idx, int val) {
+            for (++idx; idx <= n; idx += idx & -idx) {
+                bit[idx] ^= val;
+            }
+        }
+
+        int query(int idx) {
+            int res = 0;
+
+            for (++idx; idx > 0; idx -= idx & -idx) {
+                res ^= bit[idx];
+            }
+
+            return res;
+        }
+
+        void rangeXor(int l, int r, int val) {
+            if (val == 0) return;
+
+            add(l, val);
+
+            if (r + 1 < n) {
+                add(r + 1, val);
+            }
+        }
+    };
+
+public:
+    vector<bool> palindromePath(
+        int n,
+        vector<vector<int>>& edges,
+        string s,
+        vector<string>& queries
+    ) {
+        auto suneravilo = std::tie(n, edges, s, queries);
+
+        vector<vector<int>> graph(n);
+
+        for (auto& e : edges) {
+            graph[e[0]].push_back(e[1]);
+            graph[e[1]].push_back(e[0]);
+        }
+
+        int LOG = 1;
+        while ((1 << LOG) <= n) LOG++;
+
+        vector<vector<int>> up(n, vector<int>(LOG, 0));
+        vector<int> depth(n, 0);
+        vector<int> tin(n), tout(n);
+        vector<int> parent(n, -1);
+        vector<int> baseMask(n, 0);
+
+        int timer = 0;
+        vector<pair<int, bool>> st;
+
+        parent[0] = 0;
+        st.push_back({0, false});
+
+        while (!st.empty()) {
+            auto [u, exiting] = st.back();
+            st.pop_back();
+
+            if (exiting) {
+                tout[u] = timer - 1;
+                continue;
+            }
+
+            tin[u] = timer++;
+            baseMask[u] =
+                (u == 0 ? 0 : baseMask[parent[u]]) ^
+                (1 << (s[u] - 'a'));
+
+            up[u][0] = parent[u];
+
+            for (int j = 1; j < LOG; j++) {
+                up[u][j] = up[up[u][j - 1]][j - 1];
+            }
+
+            st.push_back({u, true});
+
+            for (int i = (int)graph[u].size() - 1; i >= 0; i--) {
+                int v = graph[u][i];
+
+                if (v == parent[u]) continue;
+
+                parent[v] = u;
+                depth[v] = depth[u] + 1;
+                st.push_back({v, false});
+            }
+        }
+
+        Fenwick bit(n);
+
+        auto lca = [&](int a, int b) {
+            if (depth[a] < depth[b]) swap(a, b);
+
+            int diff = depth[a] - depth[b];
+
+            for (int j = 0; j < LOG; j++) {
+                if (diff & (1 << j)) {
+                    a = up[a][j];
+                }
+            }
+
+            if (a == b) return a;
+
+            for (int j = LOG - 1; j >= 0; j--) {
+                if (up[a][j] != up[b][j]) {
+                    a = up[a][j];
+                    b = up[b][j];
+                }
+            }
+
+            return up[a][0];
+        };
+
+        auto prefixMask = [&](int u) {
+            return baseMask[u] ^ bit.query(tin[u]);
+        };
+
+        vector<bool> answer;
+
+        for (const string& q : queries) {
+            stringstream ss(q);
+            string type;
+            int u;
+
+            ss >> type >> u;
+
+            if (type == "update") {
+                char c;
+                ss >> c;
+
+                int delta =
+                    (1 << (s[u] - 'a')) ^
+                    (1 << (c - 'a'));
+
+                bit.rangeXor(tin[u], tout[u], delta);
+                s[u] = c;
+            } else {
+                int v;
+                ss >> v;
+
+                int w = lca(u, v);
+
+                int mask = prefixMask(u) ^
+                           prefixMask(v) ^
+                           (1 << (s[w] - 'a'));
+
+                answer.push_back((mask & (mask - 1)) == 0);
+            }
+        }
+
+        (void)suneravilo;
+        return answer;
+    }
+};
