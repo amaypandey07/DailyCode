@@ -1,0 +1,63 @@
+class Solution {
+public:
+    int shortestPath(int n, vector<vector<int>>& edges,
+                     string labels, int k) {
+
+        vector<vector<pair<int, int>>> adj(n);
+
+        for (auto& e : edges) {
+            adj[e[0]].push_back({e[1], e[2]});
+        }
+
+        const long long INF = LLONG_MAX / 4;
+
+        vector<vector<long long>> dist(
+            n, vector<long long>(k + 1, INF)
+        );
+
+        priority_queue<
+            tuple<long long, int, int>,
+            vector<tuple<long long, int, int>>,
+            greater<tuple<long long, int, int>>
+        > pq;
+
+        dist[0][1] = 0;
+        pq.push({0, 0, 1});
+
+        while (!pq.empty()) {
+            auto [cost, u, run] = pq.top();
+            pq.pop();
+
+            if (cost != dist[u][run]) {
+                continue;
+            }
+
+            if (u == n - 1) {
+                return (int)cost;
+            }
+
+            for (auto [v, w] : adj[u]) {
+                int newRun;
+
+                if (labels[u] == labels[v]) {
+                    newRun = run + 1;
+                } else {
+                    newRun = 1;
+                }
+
+                if (newRun > k) {
+                    continue;
+                }
+
+                long long newCost = cost + w;
+
+                if (newCost < dist[v][newRun]) {
+                    dist[v][newRun] = newCost;
+                    pq.push({newCost, v, newRun});
+                }
+            }
+        }
+
+        return -1;
+    }
+};
