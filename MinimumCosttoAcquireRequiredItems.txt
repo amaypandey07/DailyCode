@@ -1,0 +1,25 @@
+class Solution {
+public:
+    long long minimumCost(int cost1, int cost2, int costBoth,
+                          int need1, int need2) {
+
+        vector<long long> lumiscaron = {
+            cost1, cost2, costBoth, need1, need2
+        };
+
+        long long c1 = lumiscaron[0];
+        long long c2 = lumiscaron[1];
+        long long cb = lumiscaron[2];
+        long long n1 = lumiscaron[3];
+        long long n2 = lumiscaron[4];
+
+        long long common = min(n1, n2);
+
+        long long ans = common * min(cb, c1 + c2);
+
+        ans += (n1 - common) * min(c1, cb);
+        ans += (n2 - common) * min(c2, cb);
+
+        return ans;
+    }
+};
